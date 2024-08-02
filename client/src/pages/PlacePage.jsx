@@ -1,10 +1,20 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { FaStar } from "react-icons/fa";
+import {
+  FacebookShareButton,
+  TwitterShareButton,
+  LinkedinShareButton,
+  WhatsappShareButton,
+  FacebookIcon,
+  TwitterIcon,
+  LinkedinIcon,
+  WhatsappIcon
+} from "react-share";
 import BookingWidget from "../BookingWidget";
 import PlaceGallery from "../PlaceGallery";
 import AddressLink from "../AddressLink";
-import { FaStar } from "react-icons/fa"; // Import the FaStar icon
 
 export default function PlacePage() {
   const { id } = useParams();
@@ -16,11 +26,14 @@ export default function PlacePage() {
     axios.get(`/api/places/${id}`)
       .then(response => {
         setPlace(response.data);
+        console.log('Fetched place data:', response.data);
       })
       .catch(error => {
         console.error('Error fetching place data:', error);
       });
   }, [id]);
+
+  const shareUrl = place ? place.locationUrl : ''; // Construct URL for sharing
 
   if (!place) return <p>Loading...</p>;
 
@@ -69,6 +82,23 @@ export default function PlacePage() {
           {Array.from({ length: place.rating }, (_, index) => (
             <FaStar key={index} className="text-yellow-500 inline-block" />
           ))}
+        </div>
+      </div>
+      <div className="bg-white -mx-8 px-8 py-8 border-t">
+        <h2 className="font-semibold text-2xl">Share this Place</h2>
+        <div className="flex space-x-4 mt-4">
+          <FacebookShareButton url={shareUrl} className="bg-blue-600 p-2 rounded-full text-white">
+            <FacebookIcon size={32} round />
+          </FacebookShareButton>
+          <TwitterShareButton url={shareUrl} className="bg-blue-400 p-2 rounded-full text-white">
+            <TwitterIcon size={32} round />
+          </TwitterShareButton>
+          <LinkedinShareButton url={shareUrl} className="bg-blue-700 p-2 rounded-full text-white">
+            <LinkedinIcon size={32} round />
+          </LinkedinShareButton>
+          <WhatsappShareButton url={shareUrl} className="bg-green-500 p-2 rounded-full text-white">
+            <WhatsappIcon size={32} round />
+          </WhatsappShareButton>
         </div>
       </div>
     </div>

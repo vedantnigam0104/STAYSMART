@@ -30,6 +30,7 @@ export default function ProfilePage() {
 
   async function logout() {
     await axios.post('http://localhost:4000/api/logout');
+    alert('You have been logged out!');
     setRedirect('/');
     setUser(null);
   }

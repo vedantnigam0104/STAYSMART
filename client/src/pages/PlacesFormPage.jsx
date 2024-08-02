@@ -8,13 +8,13 @@ import TimePicker from 'react-time-picker';
 import 'react-time-picker/dist/TimePicker.css';
 import 'react-clock/dist/Clock.css';
 import moment from 'moment'; // Import moment
-//import ReactStars from "react-rating-stars-component";
 
 export default function PlacesFormPage() {
   const { id } = useParams();
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState('');
+  const [locationUrl, setLocationUrl] = useState(''); // New state for locationUrl
   const [addedPhotos, setAddedPhotos] = useState([]);
   const [description, setDescription] = useState('');
   const [perks, setPerks] = useState([]);
@@ -39,6 +39,7 @@ export default function PlacesFormPage() {
       setTitle(data.title);
       setAddress(data.address);
       setLocation(data.location);
+      setLocationUrl(data.locationUrl || ''); // Handle locationUrl
       setAddedPhotos(data.photos);
       setDescription(data.description);
       setPerks(data.perks);
@@ -47,9 +48,9 @@ export default function PlacesFormPage() {
       setCheckOut(normalizeTime(data.checkOut));
       setMaxGuests(data.maxGuests);
       setPrice(data.price);
-      setHostedBy(data.hostedBy);  // Add this line
-      setReviews(data.reviews);    // Add this line
-      setRating(data.rating);      // Add this line
+      setHostedBy(data.hostedBy);
+      setReviews(data.reviews);
+      setRating(data.rating);
     });
   }, [id]);
 
@@ -81,14 +82,14 @@ export default function PlacesFormPage() {
   async function savePlace(ev) {
     ev.preventDefault();
     const placeData = {
-      title, address, location, addedPhotos,
+      title, address, location, locationUrl, addedPhotos,
       description, perks, extraInfo,
       checkIn: normalizeTime(checkIn),
       checkOut: normalizeTime(checkOut),
       maxGuests, price,
-      hostedBy,  // Add this line
-      reviews,   // Add this line
-      rating,    // Add this line
+      hostedBy,
+      reviews,
+      rating,
     };
     if (id) {
       // update
@@ -117,6 +118,8 @@ export default function PlacesFormPage() {
         <input type="text" value={address} onChange={ev => setAddress(ev.target.value)} placeholder="address" />
         {preInput('Location', 'Location of the place (country)')}
         <input type="text" value={location} onChange={ev => setLocation(ev.target.value)} placeholder="location, for example: India" />
+        {preInput('Location URL', 'URL for the location')}
+        <input type="text" value={locationUrl} onChange={ev => setLocationUrl(ev.target.value)} placeholder="location URL" />
         {preInput('Photos', 'more = better')}
         <PhotosUploader addedPhotos={addedPhotos} onChange={setAddedPhotos} />
         {preInput('Description', 'description of the place')}
@@ -164,7 +167,7 @@ export default function PlacesFormPage() {
         <textarea value={reviews} onChange={ev => setReviews(ev.target.value)} placeholder="Reviews" />
         {preInput('Rating', 'Rating for the place')}
         <select value={rating} onChange={ev => setRating(ev.target.value)}>
-        <option value={1.0}>1.0</option>
+          <option value={1.0}>1.0</option>
           <option value={2.0}>2.0</option>
           <option value={3.0}>3.0</option>
           <option value={4.0}>4.0</option>

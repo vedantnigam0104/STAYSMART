@@ -13,9 +13,10 @@ const placeSchema = new mongoose.Schema({
   maxGuests: Number,
   price: Number,
   location: { type: String, index: true },
-  hostedBy:String, 
-  reviews:String,
-  rating:Number,
+  locationUrl: String, // New field for the location URL
+  hostedBy: String, 
+  reviews: String,
+  rating: Number,
 });
 
 const PlaceModel = mongoose.model('Place', placeSchema);
