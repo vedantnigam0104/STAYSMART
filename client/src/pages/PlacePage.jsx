@@ -4,6 +4,7 @@ import axios from "axios";
 import BookingWidget from "../BookingWidget";
 import PlaceGallery from "../PlaceGallery";
 import AddressLink from "../AddressLink";
+import { FaStar } from "react-icons/fa"; // Import the FaStar icon
 
 export default function PlacePage() {
   const { id } = useParams();
@@ -47,6 +48,28 @@ export default function PlacePage() {
           <h2 className="font-semibold text-2xl">Extra info</h2>
         </div>
         <div className="mb-4 mt-2 text-sm text-gray-700 leading-5">{place.extraInfo}</div>
+      </div>
+      <div className="bg-white -mx-8 px-8 py-8 border-t">
+        <div>
+          <h2 className="font-semibold text-2xl">Hosted By</h2>
+        </div>
+        <div className="mb-4 mt-2 text-sm text-gray-700 leading-5">{place.hostedBy}</div>
+      </div>
+      <div className="bg-white -mx-8 px-8 py-8 border-t">
+        <div>
+          <h2 className="font-semibold text-2xl">Reviews</h2>
+        </div>
+        <div className="mb-4 mt-2 text-sm text-gray-700 leading-5">{place.reviews}</div>
+      </div>
+      <div className="bg-white -mx-8 px-8 py-8 border-t">
+        <div>
+          <h2 className="font-semibold text-2xl">Rating</h2>
+        </div>
+        <div className="mb-4 mt-2 text-sm text-gray-700 leading-5">
+          {Array.from({ length: place.rating }, (_, index) => (
+            <FaStar key={index} className="text-yellow-500 inline-block" />
+          ))}
+        </div>
       </div>
     </div>
   );

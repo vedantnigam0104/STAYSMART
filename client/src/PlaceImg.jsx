@@ -1,13 +1,12 @@
 import Image from "./Image.jsx";
 
-export default function PlaceImg({place,index=0,className=null}) {
-  if (!place.photos?.length) {
-    return '';
+export default function PlaceImg({ place, index = 0, className = 'object-cover' }) {
+  if (!place?.photos?.length) {
+    return null; // Return null instead of an empty string
   }
-  if (!className) {
-    className = 'object-cover';
-  }
+  const imageUrl = place.photos[index];
+  console.log('PlaceImg image URL:', imageUrl); // Debugging line
   return (
-    <Image className={className} src={place.photos[index]} alt=""/>
+    <Image className={className} src={imageUrl} alt={`Image of ${place.title}`} />
   );
 }
