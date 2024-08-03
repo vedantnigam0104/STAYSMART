@@ -92,7 +92,8 @@ export default function PaymentPage() {
     try {
       const response = await axios.post('http://localhost:4000/api/verify-otp', {
         email: user.email, // Use the actual email of the customer
-        otp
+        otp,
+        bookingId
       });
 
       if (response.data.success) {

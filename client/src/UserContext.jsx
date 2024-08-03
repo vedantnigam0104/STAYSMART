@@ -8,18 +8,22 @@ export function UserContextProvider({ children }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const { data } = await axios.get('http://localhost:4000/api/profile');
+        setUser(data);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        // Optionally handle specific error cases (e.g., token expired)
+      } finally {
+        setReady(true);
+      }
+    };
+
     if (!user) {
-      axios.get('http://localhost:4000/api/profile')
-        .then(({ data }) => {
-          console.log(data);
-          setUser(data);
-          setReady(true);
-        })
-        .catch(() => {
-          setReady(true); // Ensure ready state is set even if there's an error
-        });
+      fetchUser();
     } else {
-      setReady(true); // Ensure ready state is set if user is already present
+      setReady(true); // User is already present, so set ready
     }
   }, [user]);
 

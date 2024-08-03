@@ -15,12 +15,15 @@ const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
 const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
+const bodyParser = require('body-parser');
 //const uploadAvatarMiddleware = multer({ dest: 'uploads/' });
 
 const app = express();
 
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = 'fasefraw4r5r3wq45wdfgw34twdfg';
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -80,6 +83,12 @@ function getUserDataFromReq(req) {
   });
 }
 
+mongoose.connect(process.env.MONGO_URL, {
+  //useNewUrlParser: true,
+  //useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 app.get('/api/test', (req,res) => {
   mongoose.connect(process.env.MONGO_URL);
@@ -102,27 +111,58 @@ app.post('/api/register', async (req,res) => {
   }
 });
 
-app.post('/api/login', async (req,res) => {
-  mongoose.connect(process.env.MONGO_URL);
-  const {email,password} = req.body;
-  const userDoc = await User.findOne({email});
-  if (userDoc) {
-    const passOk = bcrypt.compareSync(password, userDoc.password);
-    if (passOk) {
-      jwt.sign({
-        email:userDoc.email,
-        id:userDoc._id
-      }, jwtSecret, {}, (err,token) => {
-        if (err) throw err;
-        res.cookie('token', token).json(userDoc);
-      });
-    } else {
-      res.status(422).json('pass not ok');
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password, avatar, isGoogleSignIn } = req.body;
+
+    if (isGoogleSignIn) {
+      // Google Sign-In logic
+      let userDoc = await User.findOne({ email });
+
+      if (!userDoc) {
+        userDoc = await User.create({
+          email,
+          name: 'Google User', // Or fetch from Google
+          avatar: avatar // Save the avatar URL
+        });
+      } else {
+        // Update avatar only if it hasn't been set before
+        if (!userDoc.avatar) {
+          userDoc.avatar = avatar || ''; // Set the Google avatar if not set
+          await userDoc.save();
+        }
+      }
+
+
+      const token = jwt.sign({
+        email: userDoc.email,
+        id: userDoc._id
+      }, jwtSecret);
+
+      console.log(`Google sign-in successful for email: ${email}`);
+      res.cookie('token', token).json(userDoc);
+      return;
     }
-  } else {
-    res.json('not found');
+
+    // Traditional email/password login
+    const userDoc = await User.findOne({ email });
+    if (userDoc && bcrypt.compareSync(password, userDoc.password)) {
+      const token = jwt.sign({
+        email: userDoc.email,
+        id: userDoc._id
+      }, jwtSecret);
+
+      res.cookie('token', token).json(userDoc);
+    } else {
+      res.status(422).json({ error: 'Invalid credentials' });
+    }
+
+  } catch (err) {
+    console.error('Error in login route:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 app.get('/api/profile', (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
@@ -154,42 +194,26 @@ app.get('/api/profile', (req, res) => {
 });
 
 
-app.put('/api/profile', upload.none(), async (req, res) => {
-  console.log('Request Body:', req.body); // Debug log
-  const { token } = req.cookies;
-  const { name, email, newPassword } = req.body;
+app.put('/api/profile', async (req, res) => {
+  try {
+    const { name, email, newPassword, avatar } = req.body;
 
-  if (token) {
-    jwt.verify(token, jwtSecret, {}, async (err, userData) => {
-      if (err) {
-        return res.status(401).json({ error: 'Unauthorized' }); // Handle JWT errors
-      }
+    let updates = { name };
+    if (newPassword) {
+      const hashedPassword = bcrypt.hashSync(newPassword, 10);
+      updates.password = hashedPassword;
+    }
+    if (avatar) {
+      updates.avatar = avatar; // Save the base64 string in the database
+    }
 
-      try {
-        const user = await User.findById(userData.id);
-        if (!user) {
-          return res.status(404).json({ error: 'User not found' }); // Handle user not found
-        }
-
-        // Update user fields if provided
-        if (name) user.name = name;
-        if (email) user.email = email;
-        if (newPassword) user.password = bcrypt.hashSync(newPassword, 10); // Assuming bcrypt is used for hashing
-
-        await user.save();
-        res.status(200).json({ message: 'Profile updated successfully' });
-      } catch (error) {
-        console.error('Error updating user profile:', error);
-        res.status(500).json({ error: 'Internal server error' }); // Handle other errors
-      }
-    });
-  } else {
-    res.status(401).json({ error: 'Unauthorized' }); // Handle missing token
+    const updatedUser = await User.findOneAndUpdate({ email }, updates, { new: true });
+    res.json(updatedUser);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
-
-
-
 app.post('/api/logout', (req,res) => {
   res.cookie('token', '').json(true);
 });
@@ -399,7 +423,22 @@ app.get('/api/bookings/:id', async (req, res) => {
     res.status(500).json({ error: 'Error fetching booking' });
   }
 });
+function sendConfirmationEmail(to, bookingDetails) {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: to,
+    subject: 'Booking Confirmation',
+    text: `Your booking was successful! Here are the details:\n\n${bookingDetails}`,
+  };
 
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log('Error sending email:', error);
+    } else {
+      console.log('Email sent:', info.response);
+    }
+  });
+}
 
 app.post('/api/finalize-booking', async (req, res) => {
   const { bookingId } = req.body;
@@ -411,6 +450,7 @@ app.post('/api/finalize-booking', async (req, res) => {
 
     booking.status = 'confirmed'; // Update status to confirmed
     await booking.save();
+    
 
     res.json({ success: true });
   } catch (err) {
@@ -470,11 +510,19 @@ app.post('/api/create-payment-intent', async (req, res) => {
   }
 });
 
-app.post('/api/verify-otp', (req, res) => {
-  const { email, otp } = req.body;
+app.post('/api/verify-otp', async(req, res) => {
+  const { email, otp,bookingId } = req.body;
+
+  const booking = await Booking.findById(bookingId);
 
   if (req.app.locals.otps && req.app.locals.otps[email] === otp) {
     delete req.app.locals.otps[email];
+    
+     // Ensure this is the user’s email
+
+    // Send confirmation email
+    sendConfirmationEmail(email, `Booking ID: ${booking.id}, Price: ${booking.price}`); 
+    
     res.json({ success: true });
   } else {
     res.status(400).json({ success: false, error: 'Invalid OTP' });

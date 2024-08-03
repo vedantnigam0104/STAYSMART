@@ -1,18 +1,20 @@
 import { useContext, useState, useEffect } from "react";
 import { UserContext } from "../UserContext.jsx";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams,useNavigate } from "react-router-dom";
 import axios from "axios";
 import AccountNav from "../AccountNav";
 
 export default function ProfilePage() {
+  const navigate=useNavigate();
   const [redirect, setRedirect] = useState(null);
   const { ready, user, setUser } = useContext(UserContext);
   const [profile, setProfile] = useState({
     name: '',
     email: '',
+    avatar: '' // Add avatar to the profile state
   });
   const [newPassword, setNewPassword] = useState('');
-  const [file, setFile] = useState(null);
+  const [avatarBase64, setAvatarBase64] = useState('');
   const [error, setError] = useState(null);
   let { subpage } = useParams();
 
@@ -23,7 +25,10 @@ export default function ProfilePage() {
   useEffect(() => {
     if (ready && user) {
       axios.get('/api/profile')
-        .then(response => setProfile(response.data))
+        .then(response => {
+          setProfile(response.data);
+          setAvatarBase64(response.data.avatar); // Set the current avatar
+        })
         .catch(err => setError(err.message));
     }
   }, [ready, user]);
@@ -36,29 +41,34 @@ export default function ProfilePage() {
   }
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = () => {
+      setAvatarBase64(reader.result);
+    };
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-  
+
     try {
-      const formData = new FormData();
-      formData.append('name', profile.name);
-      formData.append('email', profile.email);
-      formData.append('newPassword', newPassword);
-  
-      await axios.put('/api/profile', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-  
+      const updatedProfile = { ...profile };
+      if (avatarBase64) {
+        updatedProfile.avatar = avatarBase64;
+      }
+      if (newPassword) {
+        updatedProfile.newPassword = newPassword;
+      }
+
+      await axios.put('/api/profile', updatedProfile);
       alert('Profile updated successfully');
-      // Refetch the profile to get updated data
-      const updatedProfile = await axios.get('/api/profile');
-      setProfile(updatedProfile.data);
-      setRedirect('/account');
+      setProfile(updatedProfile);
+      setUser(updatedProfile);
+      navigate('/account');
+
+      //const response = await axios.get('/api/profile');
+      //setProfile(response.data);
     } catch (err) {
       setError(err.message);
     }
@@ -117,6 +127,20 @@ export default function ProfilePage() {
               onChange={(e) => setNewPassword(e.target.value)}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="avatar">Avatar</label>
+            <input
+              type="file"
+              id="avatar"
+              onChange={handleFileChange}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            {/* Display the preview image */}
+            {avatarBase64 && (
+              <img src={avatarBase64} alt="Avatar Preview" className="mt-4 w-32 h-32 rounded-full object-cover" />
+            )}
           </div>
 
           <div className="flex items-center justify-between">

@@ -1,4 +1,4 @@
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { UserContext } from "./UserContext.jsx";
 import LocationModal from './LocationModal';
@@ -18,11 +18,9 @@ export default function Header() {
     monthsAhead: 0
   });
   const [guests, setGuests] = useState('Add guests');
-  const navigate=useNavigate();
+  const navigate = useNavigate();
 
   const handleSearch = async () => {
-    
-  
     try {
       const response = await axios.get('http://localhost:4000/api/search', {
         params: {
@@ -33,18 +31,15 @@ export default function Header() {
           guests: guests !== 'Add guests' ? guests : undefined
         }
       });
-  
-      // Assuming response.data contains the list of places
+
       console.log(response.data);
-  
-      // Navigate to LocationPlacesPage and pass the places data via state
+
       navigate('/places', { state: { places: response.data } });
-  
+
     } catch (error) {
       console.error('Error fetching places:', error);
     }
   };
-  
 
   return (
     <header className="flex justify-between items-center py-4 px-8 bg-white shadow-md">
@@ -77,9 +72,13 @@ export default function Header() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
         <div className="bg-gray-500 text-white rounded-full border border-gray-500 overflow-hidden">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 relative top-1">
-            <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-          </svg>
+          {user && user.avatar ? (
+            <img src={user.avatar} alt="Avatar" className="w-6 h-6 rounded-full object-cover" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+              <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+            </svg>
+          )}
         </div>
         {!!user && (
           <div>

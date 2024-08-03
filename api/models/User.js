@@ -1,13 +1,12 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
 
-const UserSchema = new Schema({
+const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
+  email: { type: String, required: false, unique: true },
+  password: { type: String, required: false },
+  avatar: { type: String ,default: 'default_avatar_base64_string'} // Add the avatar field
 });
 
-// Create the User model using the updated schema
-const UserModel = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', userSchema);
 
-module.exports = UserModel;
+module.exports = User;
