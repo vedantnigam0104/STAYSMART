@@ -1,11 +1,11 @@
 import { useContext, useState, useEffect } from "react";
 import { UserContext } from "../UserContext.jsx";
-import { Navigate, useParams,useNavigate } from "react-router-dom";
+import { Navigate, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AccountNav from "../AccountNav";
 
 export default function ProfilePage() {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const [redirect, setRedirect] = useState(null);
   const { ready, user, setUser } = useContext(UserContext);
   const [profile, setProfile] = useState({
@@ -34,10 +34,16 @@ export default function ProfilePage() {
   }, [ready, user]);
 
   async function logout() {
-    await axios.post('http://localhost:4000/api/logout');
-    alert('You have been logged out!');
-    setRedirect('/');
-    setUser(null);
+    try {
+      await axios.post('http://localhost:4000/api/logout');
+      sessionStorage.setItem('showReminderModal', 'false');
+      sessionStorage.setItem('modalShown', 'false'); // Set a flag in session storage
+      sessionStorage.clear();
+      setUser(null);
+      setRedirect('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   }
 
   const handleFileChange = (e) => {
@@ -66,9 +72,6 @@ export default function ProfilePage() {
       setProfile(updatedProfile);
       setUser(updatedProfile);
       navigate('/account');
-
-      //const response = await axios.get('/api/profile');
-      //setProfile(response.data);
     } catch (err) {
       setError(err.message);
     }
@@ -137,7 +140,6 @@ export default function ProfilePage() {
               onChange={handleFileChange}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
-            {/* Display the preview image */}
             {avatarBase64 && (
               <img src={avatarBase64} alt="Avatar Preview" className="mt-4 w-32 h-32 rounded-full object-cover" />
             )}

@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/User.js');
 const Place = require('./models/Place.js');
 const Booking = require('./models/Booking.js');
+const Reminder = require('./models/Reminder.js');
 const cookieParser = require('cookie-parser');
 const imageDownloader = require('image-downloader');
 const multer = require('multer');
@@ -16,6 +17,8 @@ const stripe = require('stripe')(process.env.STRIPE_KEY);
 const nodemailer = require('nodemailer');
 const otpGenerator = require('otp-generator');
 const bodyParser = require('body-parser');
+//const crypto = require('crypto');
+///const PaytmChecksum = require('paytmchecksum');
 //const uploadAvatarMiddleware = multer({ dest: 'uploads/' });
 
 const app = express();
@@ -36,6 +39,10 @@ app.use(cors({
   credentials: true,
   origin: 'http://localhost:5173',
 }));
+
+
+
+//const PaytmChecksum = require('./PaytmChecksum');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -60,6 +67,7 @@ async function sendOtpEmail(to, otp) {
     throw new Error('Failed to send OTP email');
   }
 }
+
 
 //const jwt = require('jsonwebtoken');
 ///const jwtSecret = process.env.JWT_SECRET; // Make sure this is correctly set in your environment
@@ -581,6 +589,64 @@ app.get('/api/places/:location', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
 });
+
+
+//const express = require('express');
+//const PaytmChecksum = require('./path-to-paytmchecksum'); // Adjust the path accordingly
+
+///const app = express();
+//app.use(express.json());
+
+//const PaytmChecksum = require('paytmchecksum'); // Ensure you have this library installed
+
+
+app.post('/api/reminders', async (req, res) => {
+  const { userId, bookingId, reminderDate } = req.body;
+  
+  try {
+    // Extract just the date part from reminderDate
+    const dateOnly = new Date(new Date(reminderDate).toDateString());
+
+    const reminder = new Reminder({
+      userId,
+      bookingId,
+      reminderDate: dateOnly,
+    });
+
+    await reminder.save();
+    res.status(201).json(reminder);
+  } catch (error) {
+    console.error('Error creating reminder:', error);
+    res.status(500).json({ error: 'Failed to create reminder' });
+  }
+});
+
+
+app.get('/api/reminders/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const endOfMonth = new Date(startOfMonth);
+  endOfMonth.setMonth(startOfMonth.getMonth() + 1);
+
+  try {
+    const reminders = await Reminder.find({
+      userId,
+      reminderDate: { $gte: startOfMonth, $lt: endOfMonth },
+      isActive: true
+    });
+    res.json(reminders);
+  } catch (error) {
+    console.error('Error fetching reminders:', error);
+    res.status(500).json({ error: 'Failed to fetch reminders' });
+  }
+});
+
+
+
+
 
 app.listen(4000,()=>
 {
